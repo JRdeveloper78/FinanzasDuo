@@ -15,6 +15,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="FinanzasDuo">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/512/home-budget.png">
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -76,7 +77,10 @@
                     <select id="month-filter" class="glass-select">
                         <!-- Populated by JS -->
                     </select>
-                    <button class="btn-primary" id="open-modal-btn">+</button>
+                    <button class="btn-primary" id="open-modal-btn">
+                        <span class="btn-text">Nuevo Gasto</span>
+                        <span class="btn-icon">+</span>
+                    </button>
                 </div>
             </header>
 
@@ -250,7 +254,7 @@
             <form id="budget-form">
                 <input type="hidden" name="originalCategory" id="budget-original-category">
                 <div class="form-group">
-                    <label>Categoría Troncal</label>
+                    <label>Categoría</label>
                     <input type="text" name="category" id="budget-category-input" placeholder="Ej: Gastos Casa"
                         required>
                 </div>
@@ -279,11 +283,11 @@
         </div>
         <div class="nav-item" data-view="transactions">
             <span class="icon transactions-icon"></span>
-            <span>Giros</span>
+            <span>Movimientos</span>
         </div>
         <div class="nav-item" data-view="budgets">
             <span class="icon budget-icon"></span>
-            <span>Metas</span>
+            <span>Presupuestos</span>
         </div>
         <div class="nav-item" data-view="sync">
             <span class="icon sync-icon"></span>

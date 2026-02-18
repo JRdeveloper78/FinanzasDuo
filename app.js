@@ -179,7 +179,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (target) {
             target.classList.add('active');
             const title = document.getElementById('view-title');
-            if (title) title.textContent = viewId === 'dashboard' ? 'Dashboard Duo' : viewId.charAt(0).toUpperCase() + viewId.slice(1);
+            if (title) {
+                const titles = {
+                    'dashboard': 'Dashboard Duo',
+                    'accounts': 'Tus Cuentas',
+                    'transactions': 'Movimientos',
+                    'budgets': 'Presupuestos Mensuales',
+                    'sync': 'Nube'
+                };
+                title.textContent = titles[viewId] || viewId.charAt(0).toUpperCase() + viewId.slice(1);
+            }
             document.querySelectorAll('.nav-item').forEach(i => i.classList.toggle('active', i.dataset.view === viewId));
             refreshAll();
         }
