@@ -1,0 +1,21 @@
+{
+    "name": "FinanzasDuo",
+    "short_name": "FinanzasDuo",
+    "description": "Tu Gestor de Finanzas Premium",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#0f172a",
+    "theme_color": "#14b8a6",
+    "icons": [
+        {
+            "src": "https://cdn.pixabay.com/photo/2017/09/07/08/54/money-2724241_1280.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "https://cdn.pixabay.com/photo/2017/09/07/08/54/money-2724241_1280.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

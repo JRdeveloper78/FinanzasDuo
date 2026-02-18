@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanzasDuo | Tu Gestor de Finanzas Premium</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+
+    <!-- iOS PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FinanzasDuo">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar glass">
+            <div class="logo-container">
+                <div class="logo-icon"></div>
+                <h1>Finanzas<span>Duo</span></h1>
+            </div>
+            <nav>
+                <ul>
+                    <li class="active nav-item" data-view="dashboard">
+                        <span class="icon home-icon"></span>
+                        <span>Dashboard</span>
+                    </li>
+                    <li class="nav-item" data-view="accounts">
+                        <span class="icon accounts-icon"></span>
+                        <span>Cuentas</span>
+                    </li>
+                    <li class="nav-item" data-view="transactions">
+                        <span class="icon transactions-icon"></span>
+                        <span>Movimientos</span>
+                    </li>
+                    <li class="nav-item" data-view="budgets">
+                        <span class="icon budget-icon"></span>
+                        <span>Presupuestos</span>
+                    </li>
+                    <li class="nav-item" data-view="sync">
+                        <span class="icon sync-icon"></span>
+                        <span>Sincronizar</span>
+                    </li>
+                </ul>
+            </nav>
+            <!-- Botón de Rescate Emergencia -->
+            <div style="padding: 15px; margin-top: auto;">
+                <button
+                    onclick="if(confirm('¿Reiniciar App? Se borrarán los datos locales.')){localStorage.clear(); location.reload();}"
+                    style="width: 100%; padding: 10px; background: rgba(255, 61, 0, 0.15); border: 1px solid #ff3d00; color: #ff3d00; border-radius: 8px; font-size: 0.75rem; cursor: pointer; transition: 0.3s; font-family: 'Outfit';">
+                    ⚠️ Reiniciar App (Rescate)
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <header>
+                <div class="header-titles">
+                    <h2 id="view-title">Dashboard</h2>
+                    <p id="view-subtitle">Hoy es un gran día para ahorrar.</p>
+                </div>
+                <div class="header-actions">
+                    <select id="month-filter" class="glass-select">
+                        <!-- Populated by JS -->
+                    </select>
+                    <button class="btn-primary" id="open-modal-btn">+ Nuevo Gasto</button>
+                </div>
+            </header>
+
+            <!-- Dashboard View -->
+            <section id="dashboard-view" class="view active">
+                <div class="dashboard-grid">
+                    <!-- Balance Overview -->
+                    <div class="card glass balance-card featured">
+                        <h3>Balance Total</h3>
+                        <p class="amount" id="total-balance">0,00<span>€</span></p>
+                        <div class="card-footer">
+                            <span class="trend positive">↑ Cargando datos...</span>
+                        </div>
+                        <div class="chart-container-small">
+                            <canvas id="balanceChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Fixed vs Variable Summary -->
+                    <div class="card glass type-card">
+                        <h3>Fijos vs Variables</h3>
+                        <div class="chart-container-small">
+                            <canvas id="typeChart"></canvas>
+                        </div>
+                        <div id="type-stats" style="margin-top: 15px; font-size: 0.85rem; color: var(--text-muted);">
+                            <!-- Dynamic stats -->
+                        </div>
+                    </div>
+
+                    <!-- Spending Summary -->
+                    <div class="card glass spending-card">
+                        <h3>Gastos por Categoría</h3>
+                        <div class="chart-container">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Recent Transactions -->
+                    <div class="card glass transactions-card compact">
+                        <div class="card-header">
+                            <h3>Transacciones Recientes</h3>
+                            <button class="view-link nav-btn" data-view="transactions">Ver todo</button>
+                        </div>
+                        <ul class="transaction-list" id="recent-transactions-list">
+                            <!-- Transactions dynamic load -->
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Accounts View -->
+            <section id="accounts-view" class="view">
+                <div class="view-header">
+                    <h3>Tus Cuentas</h3>
+                </div>
+                <div class="accounts-grid" id="accounts-grid">
+                    <!-- Accounts dynamic load -->
+                </div>
+            </section>
+
+            <!-- Budgets View -->
+            <section id="budgets-view" class="view">
+                <div class="view-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>Presupuestos Mensuales</h3>
+                    <button class="btn-primary" id="add-budget-btn" style="padding: 8px 16px; font-size: 0.85rem;">+
+                        Añadir</button>
+                </div>
+                <div class="budgets-container" id="budgets-list">
+                    <!-- Budgets dynamic load -->
+                </div>
+            </section>
+
+            <!-- Transactions View -->
+            <section id="transactions-view" class="view">
+                <div class="view-header">
+                    <h3>Movimientos</h3>
+                </div>
+                <div id="full-transactions-list">
+                    <!-- Loaded by JS -->
+                </div>
+            </section>
+
+            <!-- Sync View -->
+            <section id="sync-view" class="view">
+                <div class="view-header">
+                    <h3>Sincronización en la Nube</h3>
+                </div>
+                <div class="card glass sync-card">
+                    <p style="margin-bottom: 20px; color: var(--text-muted);">Conecta tu FinanzasDuo a Google Sheets
+                        para sincronizar datos entre dispositivos.</p>
+                    <div class="form-group">
+                        <label>URL de Google Apps Script</label>
+                        <input type="text" id="sync-url-input"
+                            placeholder="https://script.google.com/macros/s/.../exec">
+                    </div>
+                    <div style="display: flex; gap: 15px; margin-top: 10px; flex-wrap: wrap;">
+                        <button class="btn-primary" id="save-sync-btn">Guardar URL</button>
+                        <button class="btn-secondary" id="manual-sync-btn">Descargar de la Nube</button>
+                        <button class="btn-secondary" id="initial-push-btn" style="background: var(--accent);">Subir a
+                            la Nube</button>
+                    </div>
+                    <p id="sync-status-msg" style="margin-top: 15px; font-size: 0.85rem; color: var(--text-muted);"></p>
+                </div>
+                <div class="card glass" style="margin-top: 25px;">
+                    <h3>Instrucciones</h3>
+                    <ol style="margin-left: 20px; color: var(--text-muted); line-height: 1.6;">
+                        <li>Crea un Google Sheet y ve a Extensiones > Apps Script.</li>
+                        <li>Pega el código del archivo <strong>google_apps_script.js</strong> que he generado.</li>
+                        <li>Despliega como "Aplicación Web" con acceso para "Cualquiera".</li>
+                        <li>Copia la URL y pégala aquí arriba.</li>
+                    </ol>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Transaction Modal -->
+    <div id="transaction-modal" class="modal-overlay">
+        <div class="modal-content glass">
+            <h3>Nuevo Gasto</h3>
+            <form id="transaction-form">
+                <div class="form-group">
+                    <label>¿Quién realiza el movimiento?</label>
+                    <div class="toggle-group user-toggle">
+                        <label class="toggle-btn active user-btn-javier"><input type="radio" name="user" value="Javier"
+                                checked> Javier</label>
+                        <label class="toggle-btn user-btn-tete"><input type="radio" name="user" value="Teté">
+                            Teté</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <div class="toggle-group">
+                        <label class="toggle-btn active"><input type="radio" name="type" value="expense" checked>
+                            Gasto</label>
+                        <label class="toggle-btn"><input type="radio" name="type" value="income"> Ingreso</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Concepto</label>
+                    <input type="text" name="title" id="tx-title" placeholder="Ej: Supermercado" required>
+                </div>
+                <div class="form-group">
+                    <label>Monto (€)</label>
+                    <input type="number" name="amount" step="0.01" placeholder="0.00" required>
+                </div>
+                <div class="form-group">
+                    <label>Categoría Troncal</label>
+                    <select name="mainCategory" id="main-category-select">
+                        <!-- Populated dynamically by JS -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Subcategoría</label>
+                    <select name="category" id="sub-category-select">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="close-modal-btn">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Budget Modal -->
+    <div id="budget-modal" class="modal-overlay">
+        <div class="modal-content glass">
+            <h3 id="budget-modal-title">Gestionar Presupuesto</h3>
+            <form id="budget-form">
+                <input type="hidden" name="originalCategory" id="budget-original-category">
+                <div class="form-group">
+                    <label>Categoría Troncal</label>
+                    <input type="text" name="category" id="budget-category-input" placeholder="Ej: Gastos Casa"
+                        required>
+                </div>
+                <div class="form-group">
+                    <label>Límite Mensual (€)</label>
+                    <input type="number" name="limit" step="0.01" placeholder="Ej: 500.00" required
+                        id="budget-limit-input">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="close-budget-modal-btn">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Presupuesto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
