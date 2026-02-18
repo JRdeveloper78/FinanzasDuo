@@ -236,6 +236,49 @@ header p {
     font-size: 1.5rem;
 }
 
+/* Pull to Refresh Indicator */
+.pull-indicator {
+    position: fixed;
+    top: -60px;
+    left: 0;
+    right: 0;
+    height: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    opacity: 0;
+    pointer-events: none;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.pull-indicator.active {
+    opacity: 1;
+}
+
+.pull-indicator .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-top: 2px solid var(--primary);
+    border-radius: 50%;
+    margin-bottom: 5px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
 /* Dashboard Views */
 .view {
     display: none;

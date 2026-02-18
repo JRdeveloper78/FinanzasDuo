@@ -209,6 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mSelect.innerHTML = '';
         Object.keys(categoryHierarchy).forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; mSelect.appendChild(o); });
         updateS();
+        document.getElementById('tx-date').value = new Date().toISOString().split('T')[0]; // Default to today
         txModal.classList.add('active');
     };
 
@@ -220,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const d = new FormData(txForm);
         const t = txForm.querySelector('input[name="type"]:checked').value;
         const amt = parseFloat(d.get('amount'));
-        const newTx = { id: Date.now(), title: d.get('title'), amount: t === 'expense' ? -amt : amt, mainCategory: d.get('mainCategory'), category: d.get('category'), user: txForm.querySelector('input[name="user"]:checked').value, date: new Date().toISOString() };
+        const newTx = { id: Date.now(), title: d.get('title'), amount: t === 'expense' ? -amt : amt, mainCategory: d.get('mainCategory'), category: d.get('category'), user: txForm.querySelector('input[name="user"]:checked').value, date: d.get('date') || new Date().toISOString() };
         store.transactions.push(newTx);
         const ac = store.accounts.find(a => a.id === 'acc1'); if (ac) ac.balance += newTx.amount;
         saveStore(); txModal.classList.remove('active'); txForm.reset(); refreshAll();
@@ -251,7 +252,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!filter) return;
         filter.innerHTML = '';
         const now = new Date();
-        for (let i = -11; i <= 0; i++) {
+        // Incluimos 11 meses atrás y 2 meses adelante
+        for (let i = -11; i <= 2; i++) {
             const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
             const o = document.createElement('option'); o.value = `${d.getFullYear()}-${d.getMonth()}`; o.textContent = `${monthsNames[d.getMonth()]} ${d.getFullYear()}`;
             if (d.getFullYear() === selectedYear && d.getMonth() === selectedMonth) o.selected = true;
@@ -276,6 +278,52 @@ document.addEventListener('DOMContentLoaded', () => {
         const btns = gr.querySelectorAll('.toggle-btn');
         btns.forEach(b => b.addEventListener('click', () => { btns.forEach(x => x.classList.remove('active')); b.classList.add('active'); const r = b.querySelector('input'); if (r) r.checked = true; }));
     });
+});
+
+// --- Pull to Refresh Gesture ---
+let touchStartY = 0;
+const pullIndicator = document.getElementById('pull-indicator');
+const PULL_THRESHOLD = 80;
+
+window.addEventListener('touchstart', (e) => {
+    if (window.scrollY === 0) {
+        touchStartY = e.touches[0].clientY;
+    } else {
+        touchStartY = null;
+    }
+}, { passive: true });
+
+window.addEventListener('touchmove', (e) => {
+    if (touchStartY === null || !pullIndicator) return;
+    const currentY = e.touches[0].clientY;
+    const pullDistance = currentY - touchStartY;
+
+    if (pullDistance > 0 && window.scrollY === 0) {
+        const translate = Math.min(pullDistance * 0.5, PULL_THRESHOLD + 20);
+        pullIndicator.style.transform = `translateY(${translate}px)`;
+        pullIndicator.classList.add('active');
+
+        if (pullDistance > PULL_THRESHOLD) {
+            pullIndicator.querySelector('span').textContent = "Soltar para actualizar";
+        } else {
+            pullIndicator.querySelector('span').textContent = "Arrastra para actualizar";
+        }
+    }
+}, { passive: true });
+
+window.addEventListener('touchend', (e) => {
+    if (touchStartY === null || !pullIndicator) return;
+    const currentY = e.changedTouches[0].clientY;
+    const pullDistance = currentY - touchStartY;
+
+    if (pullDistance > PULL_THRESHOLD && window.scrollY === 0) {
+        pullIndicator.querySelector('span').textContent = "Actualizando...";
+        setTimeout(() => window.location.reload(), 300);
+    } else {
+        pullIndicator.style.transform = `translateY(0)`;
+        pullIndicator.classList.remove('active');
+    }
+    touchStartY = null;
 });
 
 // PWA: Registro del Service Worker
