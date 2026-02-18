@@ -62,40 +62,54 @@ document.addEventListener('DOMContentLoaded', () => {
     const isFixed = (cat) => ["Gastos casa", "SEGUROS", "Suscripciones", "Mencía", "Gadea"].includes(cat);
 
     // --- Sincronización ---
+    const updateSyncLED = (status) => {
+        const led = document.getElementById('sync-led');
+        if (!led) return;
+        led.className = 'sync-led ' + status;
+    };
+
+    // --- Sincronización ---
     const pushToCloud = async () => {
         if (!syncUrl) return;
-        const statusEl = document.getElementById('sync-status-msg');
-        if (statusEl) statusEl.textContent = "Sincronizando con la nube...";
+        updateSyncLED('syncing');
 
         try {
-            await fetch(syncUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify(store) });
+            // Enviamos como texto plano para evitar preflight OPTIONS de CORS que fallan en Apps Script
+            await fetch(syncUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify(store)
+            });
             localStorage.setItem('finanzasDuo_lastSync', new Date().toISOString());
-            if (statusEl) statusEl.textContent = "✓ Sincronizado";
+            setTimeout(() => updateSyncLED('success'), 500);
         } catch (e) {
             console.error("Sync error", e);
-            if (statusEl) statusEl.textContent = "× Error al subir";
+            updateSyncLED('error');
         }
     };
 
     const fetchFromCloud = async () => {
         if (!syncUrl) return;
-        const statusEl = document.getElementById('sync-status-msg');
-        if (statusEl) statusEl.textContent = "Descargando datos frescos...";
+        updateSyncLED('syncing');
 
         try {
-            // Bypass cache con timestamp
             const cacheBuster = syncUrl.includes('?') ? `&t=${Date.now()}` : `?t=${Date.now()}`;
             const resp = await fetch(syncUrl + cacheBuster);
             const data = await resp.json();
+
             if (data && data.transactions) {
-                store = data;
-                saveStore();
-                refreshAll();
-                if (statusEl) statusEl.textContent = "✓ Datos actualizados";
+                // Merge básico: Solo actualizamos si hay cambios reales
+                if (JSON.stringify(data) !== JSON.stringify(store)) {
+                    store = data;
+                    saveStore();
+                    refreshAll();
+                }
+                updateSyncLED('success');
             }
         } catch (e) {
             console.error("Fetch error", e);
-            if (statusEl) statusEl.textContent = "× Error al descargar";
+            updateSyncLED('error');
         }
     };
 

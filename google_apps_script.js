@@ -21,10 +21,16 @@ function doGet(e) {
 
 function doPost(e) {
     try {
-        const jsonString = e.postData.contents;
-        const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+        let jsonString = e.postData ? e.postData.contents : null;
 
-        // Guardamos todo el estado JSON en la celda A1 para simplicidad
+        // Si viene como parámetro (algunos métodos de envío)
+        if (!jsonString && e.parameter.data) {
+            jsonString = e.parameter.data;
+        }
+
+        if (!jsonString) throw new Error("No data received");
+
+        const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
         sheet.getRange("A1").setValue(jsonString);
 
         return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
