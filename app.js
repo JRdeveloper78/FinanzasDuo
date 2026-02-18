@@ -65,7 +65,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateSyncLED = (status) => {
         const led = document.getElementById('sync-led');
         if (!led) return;
-        led.className = 'sync-led ' + status;
+        led.className = 'sync-led ' + (status || '');
+        if (!status && syncUrl) led.classList.add('success'); // Idle green if URL exists
     };
 
     // --- Sincronización ---
@@ -308,7 +309,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     filter?.addEventListener('change', (e) => { [selectedYear, selectedMonth] = e.target.value.split('-').map(Number); refreshAll(); });
 
-    document.getElementById('save-sync-btn')?.addEventListener('click', () => { syncUrl = document.getElementById('sync-url-input').value.trim(); localStorage.setItem('finanzasDuo_syncUrl', syncUrl); alert("URL Guardada"); });
+    document.getElementById('sync-url-input').value = syncUrl;
+
+    document.getElementById('save-sync-btn')?.addEventListener('click', () => {
+        syncUrl = document.getElementById('sync-url-input').value.trim();
+        localStorage.setItem('finanzasDuo_syncUrl', syncUrl);
+        alert("URL Guardada");
+        if (syncUrl) fetchFromCloud();
+    });
     document.getElementById('manual-sync-btn')?.addEventListener('click', fetchFromCloud);
     document.getElementById('initial-push-btn')?.addEventListener('click', pushToCloud);
 
@@ -316,7 +324,12 @@ document.addEventListener('DOMContentLoaded', () => {
         initFilter();
         const lastView = localStorage.getItem('finanzasDuo_lastView') || 'dashboard';
         swView(lastView);
-        if (syncUrl) fetchFromCloud();
+        if (syncUrl) {
+            updateSyncLED('success');
+            fetchFromCloud();
+        } else {
+            updateSyncLED(''); // Grey
+        }
     } catch (e) {
         console.error("Startup error", e);
     }
