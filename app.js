@@ -112,6 +112,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const balEl = document.getElementById('total-balance');
         if (balEl) balEl.innerHTML = `${store.accounts.reduce((s, a) => s + a.balance, 0).toLocaleString('es-ES', { minimumFractionDigits: 2 })}<span>€</span>`;
 
+        // Actualizar el estado de "Cargando datos..."
+        const trendEl = document.querySelector('.balance-card .trend');
+        if (trendEl) {
+            trendEl.innerHTML = `↑ Balance actualizado`;
+            trendEl.classList.remove('positive'); // Opcional: cambiar estilo si se desea
+            trendEl.style.opacity = "0.7";
+        }
+
         const recent = document.getElementById('recent-transactions-list');
         if (recent) {
             recent.innerHTML = '';
@@ -178,6 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const target = document.getElementById(`${viewId}-view`);
         if (target) {
             target.classList.add('active');
+            localStorage.setItem('finanzasDuo_lastView', viewId);
             const title = document.getElementById('view-title');
             if (title) {
                 const titles = {
@@ -268,7 +277,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
         initFilter();
-        refreshAll();
+        const lastView = localStorage.getItem('finanzasDuo_lastView') || 'dashboard';
+        swView(lastView);
         if (syncUrl) fetchFromCloud();
     } catch (e) {
         console.error("Startup error", e);
