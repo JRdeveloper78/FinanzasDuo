@@ -64,6 +64,10 @@
         <!-- Main Content -->
         <main class="content">
             <header>
+                <div class="mobile-logo-header">
+                    <div class="logo-icon-small"></div>
+                    <h1>Finanzas<span>Duo</span></h1>
+                </div>
                 <div class="header-titles">
                     <h2 id="view-title">Dashboard</h2>
                     <p id="view-subtitle">Hoy es un gran día para ahorrar.</p>
@@ -72,7 +76,7 @@
                     <select id="month-filter" class="glass-select">
                         <!-- Populated by JS -->
                     </select>
-                    <button class="btn-primary" id="open-modal-btn">+ Nuevo Gasto</button>
+                    <button class="btn-primary" id="open-modal-btn">+</button>
                 </div>
             </header>
 
@@ -262,6 +266,30 @@
             </form>
         </div>
     </div>
+
+    <!-- Bottom Navigation (Mobile Only) -->
+    <nav class="bottom-nav glass">
+        <div class="nav-item active" data-view="dashboard">
+            <span class="icon home-icon"></span>
+            <span>Inicio</span>
+        </div>
+        <div class="nav-item" data-view="accounts">
+            <span class="icon accounts-icon"></span>
+            <span>Cuentas</span>
+        </div>
+        <div class="nav-item" data-view="transactions">
+            <span class="icon transactions-icon"></span>
+            <span>Giros</span>
+        </div>
+        <div class="nav-item" data-view="budgets">
+            <span class="icon budget-icon"></span>
+            <span>Metas</span>
+        </div>
+        <div class="nav-item" data-view="sync">
+            <span class="icon sync-icon"></span>
+            <span>Nube</span>
+        </div>
+    </nav>
 
     <script src="app.js"></script>
 </body>

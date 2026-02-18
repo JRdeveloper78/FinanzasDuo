@@ -629,7 +629,7 @@ select option {
     margin: 12px 0;
 }
 
-/* Responsive (existing) */
+/* Responsive */
 @media (max-width: 1024px) {
     .dashboard-grid {
         grid-template-columns: 1fr 1fr;
@@ -640,22 +640,128 @@ select option {
     }
 }
 
+/* Mobile Adjustments (iPhone focus) */
 @media (max-width: 768px) {
+    body {
+        padding-bottom: 80px;
+        /* Space for bottom nav */
+    }
+
     .app-container {
         flex-direction: column;
+        padding: 10px;
+        gap: 15px;
     }
 
     .sidebar {
+        display: none;
+        /* Hide sidebar on mobile */
+    }
+
+    .mobile-logo-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .logo-icon-small {
+        width: 30px;
+        height: 30px;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        border-radius: 8px;
+    }
+
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 25px;
+        gap: 15px;
+    }
+
+    header h2 {
+        font-size: 1.5rem;
+    }
+
+    .header-actions {
         width: 100%;
-        margin-bottom: 20px;
+        justify-content: space-between;
     }
 
     .dashboard-grid {
         grid-template-columns: 1fr;
+        gap: 15px;
     }
 
     .balance-card.featured {
         grid-column: span 1;
+        padding: 20px;
+    }
+
+    .balance-card .amount {
+        font-size: 2.2rem;
+    }
+
+    .card {
+        padding: 20px;
+    }
+
+    /* Bottom Navigation Styling */
+    .bottom-nav {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        height: 65px;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        border-radius: 20px;
+        z-index: 1000;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .bottom-nav .nav-item {
+        flex-direction: column;
+        gap: 4px;
+        padding: 8px;
+        margin: 0;
+        background: none !important;
+        border: none !important;
+        font-size: 0.7rem;
+    }
+
+    .bottom-nav .icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .bottom-nav .nav-item.active {
+        color: var(--primary);
+    }
+
+    /* Adjust view content padding */
+    .content {
+        padding: 5px;
+    }
+
+    .accounts-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Modal adjustments for small screens */
+    .modal-content {
+        width: 100%;
+        margin: 0;
+    }
+}
+
+/* Hide mobile-only elements on desktop */
+@media (min-width: 769px) {
+
+    .bottom-nav,
+    .mobile-logo-header {
+        display: none;
     }
 }
 
