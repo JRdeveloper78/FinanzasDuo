@@ -39,11 +39,14 @@
 
             ctx.fillRect(55, 90, 70, 50); // House body
 
-            // Coin/Heart inside
-            ctx.fillStyle = '#fbbf24';
-            ctx.beginPath();
-            ctx.arc(90, 110, 10, 0, Math.PI * 2);
-            ctx.fill();
+            // Initials T & J
+            ctx.fillStyle = '#14b8a6'; // Use the theme color for the text
+            ctx.font = 'bold 28px Outfit, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Draw T and J slightly offset or together
+            ctx.fillText('TJ', 90, 115);
 
             const iconUrl = canvas.toDataURL('image/png');
             let link = document.querySelector("link[rel='apple-touch-icon']");
@@ -54,7 +57,7 @@
             }
             link.href = iconUrl;
 
-            // Update manifest icons if possible (some browsers pick this up)
+            // Save state with a version to help cache busting internally if needed
             window.DYNAMIC_ICON_URL = iconUrl;
         })();
     </script>
