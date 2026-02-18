@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // Enviamos como texto plano para evitar preflight OPTIONS de CORS que fallan en Apps Script
-            await fetch(syncUrl, {
+            const response = await fetch(syncUrl, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'text/plain' },
@@ -96,6 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const cacheBuster = syncUrl.includes('?') ? `&t=${Date.now()}` : `?t=${Date.now()}`;
             const resp = await fetch(syncUrl + cacheBuster);
+            if (!resp.ok) throw new Error("Network response was not ok");
             const data = await resp.json();
 
             if (data && data.transactions) {
@@ -106,6 +107,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     refreshAll();
                 }
                 updateSyncLED('success');
+            } else {
+                throw new Error("Invalid data format");
             }
         } catch (e) {
             console.error("Fetch error", e);
