@@ -3,19 +3,66 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FinanzasDuo | Tu Gestor de Finanzas Premium</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-    <link rel="manifest" href="manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
     <!-- iOS PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="FinanzasDuo">
-    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/512/home-budget.png?v=2">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/512/home-budget.png?v=3">
+
+    <title>FinanzasDuo | Tu Gestor de Finanzas Premium</title>
+
+    <script>
+        // Dynamic Icon Generator for iOS PWA
+        (function () {
+            const canvas = document.createElement('canvas');
+            canvas.width = 180;
+            canvas.height = 180;
+            const ctx = canvas.getContext('2d');
+
+            // Background Gradient
+            const grad = ctx.createLinearGradient(0, 0, 180, 180);
+            grad.addColorStop(0, '#14b8a6');
+            grad.addColorStop(1, '#6366f1');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 180, 180);
+
+            // House Silhouette
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.moveTo(90, 40); // Roof top
+            ctx.lineTo(40, 90); // Roof left
+            ctx.lineTo(140, 90); // Roof right
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillRect(55, 90, 70, 50); // House body
+
+            // Coin/Heart inside
+            ctx.fillStyle = '#fbbf24';
+            ctx.beginPath();
+            ctx.arc(90, 110, 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            const iconUrl = canvas.toDataURL('image/png');
+            let link = document.querySelector("link[rel='apple-touch-icon']");
+            if (!link) {
+                link = document.createElement('link');
+                link.rel = 'apple-touch-icon';
+                document.head.appendChild(link);
+            }
+            link.href = iconUrl;
+
+            // Update manifest icons if possible (some browsers pick this up)
+            window.DYNAMIC_ICON_URL = iconUrl;
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="manifest" href="manifest.json?v=3">
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
