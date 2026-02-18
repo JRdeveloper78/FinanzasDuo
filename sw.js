@@ -1,4 +1,4 @@
-const CACHE_NAME = 'finanzasduo-v7';
+const CACHE_NAME = 'finanzasduo-v8';
 const ASSETS = [
     './',
     './index.html',
@@ -26,6 +26,11 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+    // Bypass cache for Google Apps Script (Sync)
+    if (event.request.url.includes('script.google.com')) {
+        return;
+    }
+
     event.respondWith(
         caches.match(event.request).then((response) => {
             return response || fetch(event.request);

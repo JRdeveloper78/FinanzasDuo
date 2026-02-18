@@ -64,19 +64,39 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Sincronización ---
     const pushToCloud = async () => {
         if (!syncUrl) return;
+        const statusEl = document.getElementById('sync-status-msg');
+        if (statusEl) statusEl.textContent = "Sincronizando con la nube...";
+
         try {
             await fetch(syncUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify(store) });
             localStorage.setItem('finanzasDuo_lastSync', new Date().toISOString());
-        } catch (e) { console.error("Sync error", e); }
+            if (statusEl) statusEl.textContent = "✓ Sincronizado";
+        } catch (e) {
+            console.error("Sync error", e);
+            if (statusEl) statusEl.textContent = "× Error al subir";
+        }
     };
 
     const fetchFromCloud = async () => {
         if (!syncUrl) return;
+        const statusEl = document.getElementById('sync-status-msg');
+        if (statusEl) statusEl.textContent = "Descargando datos frescos...";
+
         try {
-            const resp = await fetch(syncUrl);
+            // Bypass cache con timestamp
+            const cacheBuster = syncUrl.includes('?') ? `&t=${Date.now()}` : `?t=${Date.now()}`;
+            const resp = await fetch(syncUrl + cacheBuster);
             const data = await resp.json();
-            if (data && data.transactions) { store = data; saveStore(); refreshAll(); }
-        } catch (e) { console.error("Fetch error", e); }
+            if (data && data.transactions) {
+                store = data;
+                saveStore();
+                refreshAll();
+                if (statusEl) statusEl.textContent = "✓ Datos actualizados";
+            }
+        } catch (e) {
+            console.error("Fetch error", e);
+            if (statusEl) statusEl.textContent = "× Error al descargar";
+        }
     };
 
     // --- Renders ---
