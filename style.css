@@ -419,12 +419,21 @@ header p {
     font-size: 1.2rem;
 }
 
+.icon-circle.small {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    margin-right: 10px;
+}
+
 .icon-circle.comida {
     background: rgba(99, 102, 241, 0.15);
     color: #818cf8;
 }
 
-.icon-circle.comida::after {
+.icon-circle.comida::after,
+.icon-circle.supermercado::after {
     content: '🛒';
 }
 
@@ -433,8 +442,33 @@ header p {
     color: #2dd4bf;
 }
 
-.icon-circle.gastos-casa::after {
+.icon-circle.gastos-casa::after,
+.icon-circle.hipoteca::after {
     content: '🏠';
+}
+
+.icon-circle.agua::after {
+    content: '💧';
+}
+
+.icon-circle.electricidad::after {
+    content: '⚡';
+}
+
+.icon-circle.gas::after {
+    content: '🔥';
+}
+
+.icon-circle.telefono-internet-casa::after {
+    content: '🌐';
+}
+
+.icon-circle.limpieza-casa::after {
+    content: '🧹';
+}
+
+.icon-circle.ibi::after {
+    content: '🏢';
 }
 
 .icon-circle.transporte {
@@ -442,8 +476,19 @@ header p {
     color: #fbbf24;
 }
 
-.icon-circle.transporte::after {
+.icon-circle.transporte::after,
+.icon-circle.gasolina-golf::after,
+.icon-circle.gasolina-tiguan::after {
     content: '🚗';
+}
+
+.icon-circle.itv-golf::after,
+.icon-circle.itv-tiguan::after {
+    content: '🔧';
+}
+
+.icon-circle.parking-otros::after {
+    content: '🅿️';
 }
 
 .icon-circle.ingresos {
@@ -451,8 +496,17 @@ header p {
     color: #4ade80;
 }
 
-.icon-circle.ingresos::after {
+.icon-circle.ingresos::after,
+.icon-circle.nomina::after {
     content: '💰';
+}
+
+.icon-circle.ventas::after {
+    content: '📈';
+}
+
+.icon-circle.intereses::after {
+    content: '🏦';
 }
 
 .icon-circle.ocio {
@@ -462,6 +516,26 @@ header p {
 
 .icon-circle.ocio::after {
     content: '🎭';
+}
+
+.icon-circle.espectaculos::after {
+    content: '🎟️';
+}
+
+.icon-circle.restauracion::after {
+    content: '🍴';
+}
+
+.icon-circle.regalos::after {
+    content: '🎁';
+}
+
+.icon-circle.bodas-y-cumpleanos::after {
+    content: '🎂';
+}
+
+.icon-circle.viajes-y-escapadas::after {
+    content: '✈️';
 }
 
 .icon-circle.seguros {
@@ -482,6 +556,18 @@ header p {
     content: '📺';
 }
 
+.icon-circle.netflix::after {
+    content: '🎬';
+}
+
+.icon-circle.apple-music::after {
+    content: '🎵';
+}
+
+.icon-circle.apple-almacenamiento::after {
+    content: '☁️';
+}
+
 .icon-circle.mencia {
     background: rgba(168, 85, 247, 0.15);
     color: #a855f7;
@@ -489,6 +575,30 @@ header p {
 
 .icon-circle.mencia::after {
     content: '👧';
+}
+
+.icon-circle.comedor::after {
+    content: '🍱';
+}
+
+.icon-circle.baile::after {
+    content: '💃';
+}
+
+.icon-circle.ingles::after {
+    content: '🇬🇧';
+}
+
+.icon-circle.pintura::after {
+    content: '🎨';
+}
+
+.icon-circle.piscina::after {
+    content: '🏊';
+}
+
+.icon-circle.ludoteca::after {
+    content: '🧸';
 }
 
 .icon-circle.gadea {
@@ -500,6 +610,14 @@ header p {
     content: '👶';
 }
 
+.icon-circle.guarderia::after {
+    content: '🍼';
+}
+
+.icon-circle.ropa-accesorios::after {
+    content: '👗';
+}
+
 .icon-circle.amazon {
     background: rgba(255, 153, 0, 0.15);
     color: #ff9900;
@@ -507,6 +625,14 @@ header p {
 
 .icon-circle.amazon::after {
     content: '📦';
+}
+
+.icon-circle.suscripcion-prime::after {
+    content: '💎';
+}
+
+.icon-circle.compras::after {
+    content: '🛒';
 }
 
 .details {

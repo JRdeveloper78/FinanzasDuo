@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveStore = () => { localStorage.setItem('finanzasDuo_store', JSON.stringify(store)); if (syncUrl) pushToCloud(); };
     const getFilteredTx = () => store.transactions.filter(t => { const d = new Date(t.date); return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth; });
     const isFixed = (cat) => ["Gastos casa", "SEGUROS", "Suscripciones", "Mencía", "Gadea"].includes(cat);
+    const slug = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]/g, '');
 
     // Migración de syncUrl a store si existe en localStorage por separado
     if (!store.syncUrl && localStorage.getItem('finanzasDuo_syncUrl')) {
@@ -173,7 +174,9 @@ document.addEventListener('DOMContentLoaded', () => {
             recent.innerHTML = '';
             filtered.slice(-5).reverse().forEach(t => {
                 const li = document.createElement('li');
-                li.innerHTML = `<div class="icon-circle ${t.mainCategory.toLowerCase().replace(' ', '-')}"></div><div class="details"><p class="title">${t.title} <span class="user-badge badge-${t.user.toLowerCase().replace('é', 'e')}">${t.user}</span></p><p class="category">${t.category} <span>(${isFixed(t.mainCategory) ? 'Fijo' : 'Variable'})</span></p></div><p class="amount ${t.amount < 0 ? 'expense' : 'income'}">${t.amount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}€</p>`;
+                const mainClass = slug(t.mainCategory);
+                const subClass = slug(t.category);
+                li.innerHTML = `<div class="icon-circle ${mainClass} ${subClass}"></div><div class="details"><p class="title">${t.title} <span class="user-badge badge-${slug(t.user)}">${t.user}</span></p><p class="category">${t.category} <span>(${isFixed(t.mainCategory) ? 'Fijo' : 'Variable'})</span></p></div><p class="amount ${t.amount < 0 ? 'expense' : 'income'}">${t.amount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}€</p>`;
                 recent.appendChild(li);
             });
         }
@@ -188,6 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
         store.budgets.forEach(b => {
             const spent = Math.abs(filtered.filter(t => t.mainCategory === b.category && t.amount < 0).reduce((s, t) => s + t.amount, 0));
             const perc = Math.min((spent / b.limit) * 100, 100) || 0;
+            const mainClass = slug(b.category);
             const subs = {};
             filtered.filter(t => t.mainCategory === b.category && t.amount < 0).forEach(t => subs[t.category] = (subs[t.category] || 0) + Math.abs(t.amount));
 
@@ -196,7 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const card = document.createElement('div');
             card.className = 'card glass budget-card';
-            card.innerHTML = `<div class="budget-main"><div class="budget-actions"><button class="budget-action-btn edit-budget">✎</button><button class="budget-action-btn delete-budget delete">✕</button></div><div class="budget-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;"><h3>${b.category}</h3><p>${spent.toLocaleString('es-ES')} / ${b.limit.toLocaleString('es-ES')}€</p></div><p class="budget-subs-summary" style="font-size: 0.65rem; color: var(--text-muted); font-style: italic; margin-bottom: 8px;">${summary.slice(0, -3) || 'Sin gastos'}</p><div class="progress-bar"><div class="progress" style="width: ${perc}%; background: ${perc > 90 ? '#ff3d00' : '#14b8a6'}"></div></div><p class="subtext" style="font-size: 0.75rem; margin-top: 8px; opacity: 0.6; text-align: center;">Detalle ↓</p></div><div class="budget-details">${subHtml || '<p class="subtext">Sin gastos.</p>'}</div>`;
+            card.innerHTML = `<div class="budget-main"><div class="budget-actions"><button class="budget-action-btn edit-budget">✎</button><button class="budget-action-btn delete-budget delete">✕</button></div><div class="budget-header" style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;"><div class="icon-circle small ${mainClass}"></div><div style="flex:1"><h3>${b.category}</h3><p style="font-size: 0.9rem; opacity: 0.8;">${spent.toLocaleString('es-ES')} / ${b.limit.toLocaleString('es-ES')}€</p></div></div><p class="budget-subs-summary" style="font-size: 0.65rem; color: var(--text-muted); font-style: italic; margin-bottom: 8px;">${summary.slice(0, -3) || 'Sin gastos'}</p><div class="progress-bar"><div class="progress" style="width: ${perc}%; background: ${perc > 90 ? '#ff3d00' : '#14b8a6'}"></div></div><p class="subtext" style="font-size: 0.75rem; margin-top: 8px; opacity: 0.6; text-align: center;">Detalle ↓</p></div><div class="budget-details">${subHtml || '<p class="subtext">Sin gastos.</p>'}</div>`;
             card.onclick = (e) => { if (!e.target.closest('.budget-action-btn')) card.classList.toggle('expanded'); };
             card.querySelector('.edit-budget').onclick = (e) => { e.stopPropagation(); openBudgetModal(b); };
             card.querySelector('.delete-budget').onclick = (e) => { e.stopPropagation(); if (confirm(`¿Eliminar?`)) { store.budgets = store.budgets.filter(x => x !== b); saveStore(); renderBudgets(); } };
@@ -212,7 +216,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const ul = list.querySelector('ul');
         filtered.slice().reverse().forEach(t => {
             const li = document.createElement('li');
-            li.innerHTML = `<div class="icon-circle ${t.mainCategory.toLowerCase().replace(' ', '-')}"></div><div class="details"><p class="title">${t.title} <span class="user-badge badge-${t.user.toLowerCase().replace('é', 'e')}">${t.user}</span></p><p class="category">${t.category} (${isFixed(t.mainCategory) ? 'Fijo' : 'Variable'})</p></div><p class="amount ${t.amount < 0 ? 'expense' : 'income'}">${t.amount.toLocaleString('es-ES')}€</p>`;
+            const mainClass = slug(t.mainCategory);
+            const subClass = slug(t.category);
+            li.innerHTML = `<div class="icon-circle ${mainClass} ${subClass}"></div><div class="details"><p class="title">${t.title} <span class="user-badge badge-${slug(t.user)}">${t.user}</span></p><p class="category">${t.category} (${isFixed(t.mainCategory) ? 'Fijo' : 'Variable'})</p></div><p class="amount ${t.amount < 0 ? 'expense' : 'income'}">${t.amount.toLocaleString('es-ES')}€</p>`;
             ul.appendChild(li);
         });
     };
