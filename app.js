@@ -30,7 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
             { id: 'acc3', name: 'Cuenta Ahorro', balance: 12000, type: 'Ahorros', bank: 'Openbank' },
             { id: 'acc4', name: 'Fondo Emergencias', balance: 5000, type: 'Emergencias', bank: 'MyInvestor' }
         ],
-        budgets: Object.keys(categoryHierarchy).filter(c => !["Ingresos", "Otros", "SEGUROS"].includes(c)).map(c => ({ category: c, limit: 0 }))
+        budgets: Object.keys(categoryHierarchy).filter(c => !["Ingresos", "Otros", "SEGUROS"].includes(c)).map(c => ({ category: c, limit: 0 })),
+        syncUrl: ''
     };
 
     let store;
@@ -51,7 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!store.budgets.find(b => b.category === cat)) store.budgets.push({ category: cat, limit: 0 });
     });
 
-    let syncUrl = localStorage.getItem('finanzasDuo_syncUrl') || '';
+
+
+    let syncUrl = store.syncUrl || '';
     let selectedMonth = new Date().getMonth();
     let selectedYear = new Date().getFullYear();
     const monthsNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
@@ -60,6 +63,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveStore = () => { localStorage.setItem('finanzasDuo_store', JSON.stringify(store)); if (syncUrl) pushToCloud(); };
     const getFilteredTx = () => store.transactions.filter(t => { const d = new Date(t.date); return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth; });
     const isFixed = (cat) => ["Gastos casa", "SEGUROS", "Suscripciones", "Mencía", "Gadea"].includes(cat);
+
+    // Migración de syncUrl a store si existe en localStorage por separado
+    if (!store.syncUrl && localStorage.getItem('finanzasDuo_syncUrl')) {
+        store.syncUrl = localStorage.getItem('finanzasDuo_syncUrl');
+        syncUrl = store.syncUrl;
+        saveStore();
+    }
 
     // --- Sincronización ---
     const updateSyncLED = (status) => {
@@ -313,7 +323,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('save-sync-btn')?.addEventListener('click', () => {
         syncUrl = document.getElementById('sync-url-input').value.trim();
+        store.syncUrl = syncUrl;
         localStorage.setItem('finanzasDuo_syncUrl', syncUrl);
+        saveStore();
         alert("URL Guardada");
         if (syncUrl) fetchFromCloud();
     });
