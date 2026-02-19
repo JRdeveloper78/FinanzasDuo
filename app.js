@@ -114,7 +114,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data && data.transactions) {
                 // Merge básico: Solo actualizamos si hay cambios reales
                 if (JSON.stringify(data) !== JSON.stringify(store)) {
+                    const currentUrl = store.syncUrl; // Preservar URL local
                     store = data;
+                    if (!store.syncUrl) store.syncUrl = currentUrl;
                     saveStore();
                     refreshAll();
                 }
@@ -395,8 +397,13 @@ window.addEventListener('touchend', (e) => {
     const pullDistance = currentY - touchStartY;
 
     if (pullDistance > PULL_THRESHOLD && window.scrollY === 0) {
-        pullIndicator.querySelector('span').textContent = "Actualizando...";
-        setTimeout(() => window.location.reload(), 300);
+        pullIndicator.querySelector('span').textContent = "Sincronizando...";
+        fetchFromCloud().finally(() => {
+            setTimeout(() => {
+                pullIndicator.style.transform = `translateY(0)`;
+                pullIndicator.classList.remove('active');
+            }, 500);
+        });
     } else {
         pullIndicator.style.transform = `translateY(0)`;
         pullIndicator.classList.remove('active');
