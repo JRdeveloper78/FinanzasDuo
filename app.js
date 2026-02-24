@@ -52,7 +52,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!store.budgets.find(b => b.category === cat)) store.budgets.push({ category: cat, limit: 0 });
     });
 
-
+    // Migración de syncUrl a store si existe en localStorage por separado (Legacy)
+    if (!store.syncUrl && localStorage.getItem('finanzasDuo_syncUrl')) {
+        store.syncUrl = localStorage.getItem('finanzasDuo_syncUrl');
+    }
 
     let syncUrl = store.syncUrl || '';
     let selectedMonth = new Date().getMonth();
@@ -60,17 +63,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const monthsNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
     // --- Utilidades ---
-    const saveStore = () => { localStorage.setItem('finanzasDuo_store', JSON.stringify(store)); if (syncUrl) pushToCloud(); };
+    const saveStore = () => {
+        store.syncUrl = syncUrl; // Asegurar que el store tiene la URL actual
+        localStorage.setItem('finanzasDuo_store', JSON.stringify(store));
+        if (syncUrl) pushToCloud();
+    };
     const getFilteredTx = () => store.transactions.filter(t => { const d = new Date(t.date); return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth; });
     const isFixed = (cat) => ["Gastos casa", "SEGUROS", "Suscripciones", "Mencía", "Gadea"].includes(cat);
-    const slug = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]/g, '');
-
-    // Migración de syncUrl a store si existe en localStorage por separado
-    if (!store.syncUrl && localStorage.getItem('finanzasDuo_syncUrl')) {
-        store.syncUrl = localStorage.getItem('finanzasDuo_syncUrl');
-        syncUrl = store.syncUrl;
-        saveStore();
-    }
+    const slug = (str) => String(str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]/g, '');
 
     // --- Sincronización ---
     const updateSyncLED = (status) => {
@@ -80,14 +80,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!status && syncUrl) led.classList.add('success'); // Idle green if URL exists
     };
 
-    // --- Sincronización ---
     const pushToCloud = async () => {
         if (!syncUrl) return;
         updateSyncLED('syncing');
-
         try {
-            // Enviamos como texto plano para evitar preflight OPTIONS de CORS que fallan en Apps Script
-            const response = await fetch(syncUrl, {
+            await fetch(syncUrl, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'text/plain' },
@@ -104,25 +101,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const fetchFromCloud = async () => {
         if (!syncUrl) return;
         updateSyncLED('syncing');
-
         try {
             const cacheBuster = syncUrl.includes('?') ? `&t=${Date.now()}` : `?t=${Date.now()}`;
             const resp = await fetch(syncUrl + cacheBuster);
             if (!resp.ok) throw new Error("Network response was not ok");
             const data = await resp.json();
-
             if (data && data.transactions) {
-                // Merge básico: Solo actualizamos si hay cambios reales
                 if (JSON.stringify(data) !== JSON.stringify(store)) {
-                    const currentUrl = store.syncUrl; // Preservar URL local
+                    const currentUrl = syncUrl;
                     store = data;
-                    if (!store.syncUrl) store.syncUrl = currentUrl;
+                    store.syncUrl = currentUrl;
                     saveStore();
                     refreshAll();
                 }
                 updateSyncLED('success');
-            } else {
-                throw new Error("Invalid data format");
             }
         } catch (e) {
             console.error("Fetch error", e);
@@ -346,7 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
         swView(lastView);
         if (syncUrl) {
             updateSyncLED('success');
-            fetchFromCloud();
+            setTimeout(fetchFromCloud, 1000); // Pequeño retardo para asegurar que todo está listo
         } else {
             updateSyncLED(''); // Grey
         }
