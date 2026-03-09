@@ -252,30 +252,123 @@ header p {
 
 .header-actions {
     display: flex;
-    gap: 15px;
     align-items: center;
+    gap: 15px;
+}
+
+.header-main-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+@media (max-width: 600px) {
+    .header-actions {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        gap: 10px;
+    }
+
+    .header-main-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .header-main-buttons button {
+        padding: 12px 10px !important;
+        justify-content: center;
+    }
+}
+
+.btn-income,
+.btn-expense,
+.btn-primary,
+.btn-secondary {
+    border: none;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: 'Outfit';
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: white;
+}
+
+.btn-income {
+    background: linear-gradient(135deg, var(--primary), #10b981);
+    box-shadow: 0 4px 15px rgba(20, 184, 166, 0.3);
+}
+
+.btn-expense {
+    background: linear-gradient(135deg, var(--accent), #4f46e5);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
 }
 
 .btn-primary {
     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 10px 15px -3px rgba(20, 184, 166, 0.3);
-    transition: var(--transition);
+    box-shadow: 0 4px 15px rgba(20, 184, 166, 0.3);
 }
 
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-income:hover,
+.btn-expense:hover,
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 20px 25px -5px rgba(20, 184, 166, 0.4);
+    filter: brightness(1.1);
+    box-shadow: 0 6px 20px rgba(20, 184, 166, 0.4);
 }
 
-.btn-primary .btn-icon {
-    display: none;
-    font-size: 1.5rem;
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Loan Specific Styles */
+.account-card.loan {
+    border-left: 4px solid #f59e0b !important;
+}
+
+.loan-stats {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.loan-input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 8px 12px;
+    border-radius: 8px;
+}
+
+.loan-input-group label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.loan-input-group input {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-weight: 700;
+    width: 60px;
+    text-align: right;
+    font-family: inherit;
+    font-size: 0.85rem;
+    outline: none;
 }
 
 /* Pull to Refresh Indicator */
@@ -720,8 +813,8 @@ header p {
 }
 
 select option {
-    background: #1e293b;
-    color: white;
+    background-color: #1e293b;
+    color: #ffffff;
 }
 
 .form-group input:focus {
@@ -788,15 +881,6 @@ select option {
     margin-top: 30px;
 }
 
-.btn-secondary {
-    flex: 1;
-    background: hsla(0, 0%, 100%, 0.1);
-    color: var(--text-main);
-    border: none;
-    padding: 14px;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-}
 
 /* Charts Containers */
 .chart-container {
@@ -918,16 +1002,6 @@ select option {
         font-size: 2.2rem;
     }
 
-    .btn-primary {
-        padding: 8px 16px;
-        width: auto;
-        height: auto;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: var(--radius-md);
-        font-size: 0.85rem;
-    }
 
     .btn-primary .btn-text {
         display: block;
@@ -1129,6 +1203,10 @@ select option {
     border-left: 4px solid #000000;
 }
 
+.account-card.bank-bankinter {
+    border-left: 4px solid #ff5a00;
+}
+
 .bank-bbva .bank-label {
     color: #004481 !important;
     background: white !important;
@@ -1142,6 +1220,11 @@ select option {
 .bank-myinvestor .bank-label {
     color: #d4af37 !important;
     background: #1a1a1a !important;
+}
+
+.bank-bankinter .bank-label {
+    color: #ff5a00 !important;
+    background: white !important;
 }
 
 /* Monthly Analytics Styles */
@@ -1196,4 +1279,55 @@ select option {
     background: var(--primary-glow);
     color: var(--text-main);
     border-color: var(--primary);
+}
+
+/* Monthly & Debt Summary Card */
+.status-summary-card h3 {
+    margin-bottom: 20px;
+}
+
+.status-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.status-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.status-item .label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.status-item .val {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.status-item .val.expense {
+    color: #ff4d4d;
+}
+
+@media (max-width: 1024px) {
+    .status-summary-card {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 768px) {
+    .status-summary-card {
+        grid-column: span 1;
+    }
 }

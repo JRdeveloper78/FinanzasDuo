@@ -1,4 +1,4 @@
-const CACHE_NAME = 'finanzasduo-v16';
+const CACHE_NAME = 'finanzasduo-v19';
 const ASSETS = [
     './',
     './index.html',
@@ -32,8 +32,16 @@ self.addEventListener('fetch', (event) => {
     }
 
     event.respondWith(
-        caches.match(event.request).then((response) => {
-            return response || fetch(event.request);
-        })
+        fetch(event.request)
+            .then((response) => {
+                // If network works, put in cache and return
+                const resCopy = response.clone();
+                caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resCopy));
+                return response;
+            })
+            .catch(() => {
+                // If network fails, use cache
+                return caches.match(event.request);
+            })
     );
 });

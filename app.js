@@ -1,11 +1,24 @@
 /**
  * FinanzasDuo - Estabilidad Máxima Plus
  */
-window.resetApp = () => { if (confirm('¿Borrar todo y reiniciar?')) { localStorage.clear(); location.reload(); } };
+window.resetApp = async () => {
+    if (confirm('¿Borrar todo y forzar actualización total?')) {
+        localStorage.clear();
+        if ('serviceWorker' in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            for (let reg of regs) await reg.unregister();
+        }
+        if ('caches' in window) {
+            const keys = await caches.keys();
+            for (let key of keys) await caches.delete(key);
+        }
+        location.reload(true);
+    }
+};
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Configuración e Inicialización ---
-    const categoryHierarchy = {
+    // --- 1. Estado y Configuración ---
+    const expenseCategories = {
         "Gastos casa": ["Hipoteca", "Crédito coche + obra", "Agua", "Electricidad", "Gas", "Telefono/Internet Casa", "Limpieza casa", "IBI"],
         "COMIDA": ["SuperMERCADO"],
         "Ocio": ["Espectáculos", "Restauración", "Regalos", "Bodas y cumpleaños", "Viajes y escapadas"],
@@ -15,25 +28,30 @@ document.addEventListener('DOMContentLoaded', () => {
         "Mencía": ["Ropa - Accesorios", "Comedor", "Cooperativa Fontán Grupo 4A", "Ludoteca", "Baile", "Inglés", "Pintura", "Piscina"],
         "Gadea": ["Guardería", "Piscina", "Ropa - Accesorios"],
         "AMAZON": ["Compras", "Suscripción Prime", "Otros"],
-        "Ingresos": ["Nómina", "Ventas", "Intereses", "Otros Ingresos"],
         "Otros": ["Varios"]
     };
 
+    const incomeCategories = {
+        "Ingresos": ["Nómina Javier", "Nómina Teté", "Ventas", "Intereses", "Fondo Emergencias", "Ahorro", "Préstamo", "Otros Ingresos"]
+    };
+
+    const categoryHierarchy = { ...expenseCategories, ...incomeCategories };
+
     const initialState = {
-        transactions: [
-            { id: 1, title: 'Nómina Javier', amount: 2500, mainCategory: 'Ingresos', category: 'Nómina', user: 'Javier', date: new Date().toISOString() },
-            { id: 2, title: 'Nómina Teté', amount: 2500, mainCategory: 'Ingresos', category: 'Nómina', user: 'Teté', date: new Date().toISOString() }
-        ],
+        transactions: [],
         accounts: [
-            { id: 'acc1', name: 'Nómina Javier', balance: 2500, type: 'Banco', bank: 'BBVA' },
-            { id: 'acc2', name: 'Nómina Teté', balance: 2500, type: 'Banco', bank: 'BBVA' },
-            { id: 'acc3', name: 'Cuenta Ahorro', balance: 12000, type: 'Ahorros', bank: 'Openbank' },
-            { id: 'acc4', name: 'Fondo Emergencias', balance: 5000, type: 'Emergencias', bank: 'MyInvestor' }
+            { id: 'acc1', name: 'Nómina Javier', balance: 0, type: 'Banco', bank: 'BBVA' },
+            { id: 'acc2', name: 'Nómina Teté', balance: 0, type: 'Banco', bank: 'BBVA' },
+            { id: 'acc3', name: 'Cuenta Ahorro', balance: 0, type: 'Ahorros', bank: 'Openbank' },
+            { id: 'acc4', name: 'Fondo Emergencias', balance: 0, type: 'Emergencias', bank: 'MyInvestor' },
+            { id: 'acc5', name: 'Préstamo Bankinter', balance: -10981.27, type: 'Préstamo', bank: 'Bankinter', loanTotal: 15000, monthlyFee: 756.66, extraSaving: 500 },
+            { id: 'acc6', name: 'Hipoteca', balance: -207763.07, type: 'Préstamo', bank: 'BBVA', loanTotal: 250000, monthlyFee: 985.29, extraSaving: 0 }
         ],
-        budgets: Object.keys(categoryHierarchy).filter(c => !["Ingresos", "Otros", "SEGUROS"].includes(c)).map(c => ({ category: c, limit: 0 })),
+        budgets: Object.keys(expenseCategories).filter(c => !["Otros", "SEGUROS"].includes(c)).map(c => ({ category: c, limit: 0 })),
         syncUrl: ''
     };
 
+    // Carga de Almacenamiento Local
     let store;
     try {
         store = JSON.parse(localStorage.getItem('finanzasDuo_store')) || initialState;
@@ -46,38 +64,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!Array.isArray(store.accounts)) store.accounts = initialState.accounts;
     if (!Array.isArray(store.budgets)) store.budgets = initialState.budgets;
 
-    // Asegurar presupuestos y limpiar los no deseados (como SEGUROS)
-    store.budgets = store.budgets.filter(b => !["Ingresos", "Otros", "SEGUROS"].includes(b.category));
-    Object.keys(categoryHierarchy).filter(c => !["Ingresos", "Otros", "SEGUROS"].includes(c)).forEach(cat => {
-        if (!store.budgets.find(b => b.category === cat)) store.budgets.push({ category: cat, limit: 0 });
-    });
-
-    // Migración de syncUrl a store si existe en localStorage por separado (Legacy)
-    if (!store.syncUrl && localStorage.getItem('finanzasDuo_syncUrl')) {
-        store.syncUrl = localStorage.getItem('finanzasDuo_syncUrl');
-    }
-
-    let syncUrl = store.syncUrl || '';
+    // Variables de Estado Dinámico
+    let syncUrl = store.syncUrl || localStorage.getItem('finanzasDuo_syncUrl') || '';
     let selectedMonth = new Date().getMonth();
     let selectedYear = new Date().getFullYear();
     const monthsNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-    // --- Utilidades ---
-    const saveStore = () => {
-        store.syncUrl = syncUrl; // Asegurar que el store tiene la URL actual
-        localStorage.setItem('finanzasDuo_store', JSON.stringify(store));
-        if (syncUrl) pushToCloud();
-    };
-    const getFilteredTx = () => store.transactions.filter(t => { const d = new Date(t.date); return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth; });
-    const isFixed = (cat) => ["Gastos casa", "SEGUROS", "Suscripciones", "Mencía", "Gadea"].includes(cat);
+    // --- 2. Utilidades Nucleares (Definidas antes de las Migraciones) ---
     const slug = (str) => String(str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]/g, '');
 
-    // --- Sincronización ---
     const updateSyncLED = (status) => {
         const led = document.getElementById('sync-led');
         if (!led) return;
         led.className = 'sync-led ' + (status || '');
-        if (!status && syncUrl) led.classList.add('success'); // Idle green if URL exists
+        if (!status && syncUrl) led.classList.add('success');
     };
 
     const pushToCloud = async () => {
@@ -97,6 +97,49 @@ document.addEventListener('DOMContentLoaded', () => {
             updateSyncLED('error');
         }
     };
+
+    const saveStore = () => {
+        store.syncUrl = syncUrl;
+        localStorage.setItem('finanzasDuo_store', JSON.stringify(store));
+        if (syncUrl) pushToCloud();
+    };
+
+    const getFilteredTx = () => store.transactions.filter(t => {
+        const d = new Date(t.date);
+        return d.getFullYear() === selectedYear && d.getMonth() === selectedMonth;
+    });
+
+    const isFixed = (cat) => ["Gastos casa", "SEGUROS", "Suscripciones", "Mencía", "Gadea"].includes(cat);
+
+    const getAccountForTx = (tx) => {
+        if (tx.mainCategory === 'Ingresos') {
+            if (tx.category === 'Fondo Emergencias') return store.accounts.find(a => a.bank === 'MyInvestor');
+            if (tx.category === 'Ahorro') return store.accounts.find(a => a.bank === 'Openbank');
+            if (tx.category === 'Préstamo') return store.accounts.find(a => a.bank === 'Bankinter');
+        }
+        return store.accounts.find(a => a.name.includes(tx.user)) || store.accounts[0];
+    };
+
+    // --- 3. Procesamiento y Migraciones ---
+    // Asegurar presupuestos obligatorios
+    store.budgets = store.budgets.filter(b => !["Ingresos", "Otros", "SEGUROS"].includes(b.category));
+    Object.keys(expenseCategories).filter(c => !["Otros", "SEGUROS"].includes(c)).forEach(cat => {
+        if (!store.budgets.find(b => b.category === cat)) store.budgets.push({ category: cat, limit: 0 });
+    });
+
+    // Migración: Asegurar cuenta Bankinter
+    if (!store.accounts.find(a => a.name.includes('Bankinter'))) {
+        store.accounts.push({ id: 'acc5', name: 'Préstamo Bankinter', balance: -10981.27, type: 'Préstamo', bank: 'Bankinter', loanTotal: 15000, monthlyFee: 756.66, extraSaving: 500 });
+        saveStore();
+    }
+    // Migración: Asegurar cuenta Hipoteca
+    const mortgageAcc = store.accounts.find(a => a.name === 'Hipoteca');
+    if (!mortgageAcc) {
+        store.accounts.push({ id: 'acc6', name: 'Hipoteca', balance: -207763.07, type: 'Préstamo', bank: 'BBVA', loanTotal: 250000, monthlyFee: 985.29, extraSaving: 0 });
+        saveStore();
+    } else {
+        mortgageAcc.monthlyFee = 985.29; // Asegurar cuota fija actualizada
+    }
 
     const fetchFromCloud = async () => {
         if (!syncUrl) return;
@@ -147,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (statsDiv) statsDiv.innerHTML = `<div style="display:flex; justify-content:space-between;"><span>Fijos:</span><span style="color:white; font-weight:600;">${fAmt.toLocaleString('es-ES')}€</span></div><div style="display:flex; justify-content:space-between;"><span>Variables:</span><span style="color:white; font-weight:600;">${vAmt.toLocaleString('es-ES')}€</span></div>`;
 
         if (charts.balance) charts.balance.destroy();
-        charts.balance = new Chart(canvases.bal, { type: 'line', data: { labels: ['S1', 'S2', 'S3', 'S4'], datasets: [{ data: [400, 300, 600, 200], borderColor: '#14b8a6', backgroundColor: 'rgba(20, 184, 166, 0.1)', fill: true, tension: 0.45, borderWidth: 3, pointRadius: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } } });
+        charts.balance = new Chart(canvases.bal, { type: 'line', data: { labels: ['S1', 'S2', 'S3', 'S4'], datasets: [{ data: [0, 0, 0, 0], borderColor: '#14b8a6', backgroundColor: 'rgba(20, 184, 166, 0.1)', fill: true, tension: 0.45, borderWidth: 3, pointRadius: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } } });
     };
 
     const updateDashboard = () => {
@@ -155,11 +198,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const balEl = document.getElementById('total-balance');
         if (balEl) balEl.innerHTML = `${store.accounts.reduce((s, a) => s + a.balance, 0).toLocaleString('es-ES', { minimumFractionDigits: 2 })}<span>€</span>`;
 
+        // Gastos del mes y deudas
+        const monthExpensesEl = document.getElementById('dashboard-month-expenses');
+        const mortgageEl = document.getElementById('dashboard-mortgage-remaining');
+        const loanEl = document.getElementById('dashboard-loan-remaining');
+
+        if (monthExpensesEl) {
+            const mExp = Math.abs(filtered.filter(t => t.amount < 0).reduce((s, t) => s + t.amount, 0));
+            monthExpensesEl.textContent = `${mExp.toLocaleString('es-ES', { minimumFractionDigits: 2 })}€`;
+        }
+
+        const mortgageAcc = store.accounts.find(a => a.name === 'Hipoteca');
+        if (mortgageEl && mortgageAcc) {
+            mortgageEl.textContent = `${mortgageAcc.balance.toLocaleString('es-ES', { minimumFractionDigits: 2 })}€`;
+        }
+
+        const loanAcc = store.accounts.find(a => a.name.includes('Bankinter'));
+        if (loanEl && loanAcc) {
+            loanEl.textContent = `${loanAcc.balance.toLocaleString('es-ES', { minimumFractionDigits: 2 })}€`;
+        }
+
         // Actualizar el estado de "Cargando datos..."
         const trendEl = document.querySelector('.balance-card .trend');
         if (trendEl) {
             trendEl.innerHTML = `↑ Balance actualizado`;
-            trendEl.classList.remove('positive'); // Opcional: cambiar estilo si se desea
             trendEl.style.opacity = "0.7";
         }
 
@@ -195,9 +257,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = document.createElement('div');
             card.className = 'card glass budget-card';
             card.innerHTML = `<div class="budget-main"><div class="budget-actions"><button class="budget-action-btn edit-budget">✎</button><button class="budget-action-btn delete-budget delete">✕</button></div><div class="budget-header" style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;"><div class="icon-circle small ${mainClass}"></div><div style="flex:1"><h3>${b.category}</h3><p style="font-size: 0.9rem; opacity: 0.8;">${spent.toLocaleString('es-ES')} / ${b.limit.toLocaleString('es-ES')}€</p></div></div><p class="budget-subs-summary" style="font-size: 0.65rem; color: var(--text-muted); font-style: italic; margin-bottom: 8px;">${summary.slice(0, -3) || 'Sin gastos'}</p><div class="progress-bar"><div class="progress" style="width: ${perc}%; background: ${perc > 90 ? '#ff3d00' : '#14b8a6'}"></div></div><p class="subtext" style="font-size: 0.75rem; margin-top: 8px; opacity: 0.6; text-align: center;">Detalle ↓</p></div><div class="budget-details">${subHtml || '<p class="subtext">Sin gastos.</p>'}</div>`;
-            card.onclick = (e) => { if (!e.target.closest('.budget-action-btn')) card.classList.toggle('expanded'); };
-            card.querySelector('.edit-budget').onclick = (e) => { e.stopPropagation(); openBudgetModal(b); };
-            card.querySelector('.delete-budget').onclick = (e) => { e.stopPropagation(); if (confirm(`¿Eliminar?`)) { store.budgets = store.budgets.filter(x => x !== b); saveStore(); renderBudgets(); } };
+            card.addEventListener('click', (e) => {
+                if (!e.target.closest('.budget-action-btn')) card.classList.toggle('expanded');
+            });
+            card.querySelector('.edit-budget').addEventListener('click', (e) => {
+                e.stopPropagation(); openBudgetModal(b);
+            });
+            card.querySelector('.delete-budget').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm(`¿Eliminar?`)) { store.budgets = store.budgets.filter(x => x !== b); saveStore(); renderBudgets(); }
+            });
             list.appendChild(card);
         });
     };
@@ -210,9 +279,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const ul = list.querySelector('ul');
         filtered.slice().reverse().forEach(t => {
             const li = document.createElement('li');
+            li.className = 'transaction-item';
             const mainClass = slug(t.mainCategory);
             const subClass = slug(t.category);
-            li.innerHTML = `<div class="icon-circle ${mainClass} ${subClass}"></div><div class="details"><p class="title">${t.title} <span class="user-badge badge-${slug(t.user)}">${t.user}</span></p><p class="category">${t.category} (${isFixed(t.mainCategory) ? 'Fijo' : 'Variable'})</p></div><p class="amount ${t.amount < 0 ? 'expense' : 'income'}">${t.amount.toLocaleString('es-ES')}€</p>`;
+            li.innerHTML = `
+                <div class="icon-circle ${mainClass} ${subClass}"></div>
+                <div class="details">
+                    <p class="title">${t.title} <span class="user-badge badge-${slug(t.user)}">${t.user}</span></p>
+                    <p class="category">${t.category} (${isFixed(t.mainCategory) ? 'Fijo' : 'Variable'})</p>
+                </div>
+                <div class="amount-actions">
+                    <p class="amount ${t.amount < 0 ? 'expense' : 'income'}">${t.amount.toLocaleString('es-ES')}€</p>
+                    <div class="tx-list-actions">
+                        <button class="edit-tx-btn" data-id="${t.id}">✎</button>
+                        <button class="delete-tx-btn" data-id="${t.id}">✕</button>
+                    </div>
+                </div>
+            `;
+            li.querySelector('.edit-tx-btn').addEventListener('click', () => openTxModal(t));
+            li.querySelector('.delete-tx-btn').addEventListener('click', () => deleteTx(t.id));
             ul.appendChild(li);
         });
     };
@@ -222,7 +307,67 @@ document.addEventListener('DOMContentLoaded', () => {
             updateDashboard(); initCharts();
             if (document.getElementById('accounts-view')?.classList.contains('active')) {
                 const grid = document.getElementById('accounts-grid');
-                if (grid) { grid.innerHTML = ''; store.accounts.forEach(acc => { const card = document.createElement('div'); card.className = `card glass account-card bank-${acc.bank?.toLowerCase()}`; card.innerHTML = `<div style="display:flex; justify-content:space-between;"><p class="type">${acc.type}</p><span class="bank-label">${acc.bank}</span></div><h3>${acc.name}</h3><p class="balance">${acc.balance.toLocaleString('es-ES')}€</p>`; grid.appendChild(card); }); }
+                if (grid) {
+                    grid.innerHTML = '';
+                    store.accounts.forEach(acc => {
+                        const isLoan = acc.type === 'Préstamo';
+                        const card = document.createElement('div');
+                        card.className = `card glass account-card bank-${slug(acc.bank)} ${isLoan ? 'loan' : ''}`;
+
+                        let loanHtml = '';
+                        if (isLoan) {
+                            const remaining = Math.abs(acc.balance);
+                            const total = acc.loanTotal || remaining;
+                            const perc = Math.max(0, Math.min(100, ((total - remaining) / total) * 100));
+                            const extra = acc.extraSaving || 0;
+                            const totalMonthly = (acc.monthlyFee || 0) + extra;
+                            const monthsLeft = totalMonthly > 0 ? Math.ceil(remaining / totalMonthly) : 0;
+
+                            const endDate = new Date();
+                            endDate.setMonth(endDate.getMonth() + monthsLeft);
+                            const dateStr = monthsNames[endDate.getMonth()] + ' ' + endDate.getFullYear();
+
+                            loanHtml = `
+                                <div class="loan-stats">
+                                    <div class="progress-bar">
+                                        <div class="progress" style="width: ${perc}%; background: var(--primary)"></div>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; font-size:0.75rem; opacity:0.8; margin-top:5px;">
+                                        <span>Progreso: ${perc.toFixed(1)}%</span>
+                                        <span>Fin: <strong>${dateStr}</strong></span>
+                                    </div>
+                                    <div class="loan-input-group">
+                                        <label>Ahorro extra variable:</label>
+                                        <input type="number" value="${extra}" class="loan-extra-input" data-id="${acc.id}">
+                                        <span>€</span>
+                                    </div>
+                                </div>
+                            `;
+                        }
+
+                        card.innerHTML = `
+                            <div style="display:flex; justify-content:space-between;">
+                                <p class="type">${acc.type}</p>
+                                <span class="bank-label">${acc.bank}</span>
+                            </div>
+                            <h3>${acc.name}</h3>
+                            <p class="balance">${acc.balance.toLocaleString('es-ES', { minimumFractionDigits: 2 })}€</p>
+                            ${loanHtml}
+                        `;
+
+                        if (isLoan) {
+                            const input = card.querySelector('.loan-extra-input');
+                            input.addEventListener('change', (e) => {
+                                const val = parseFloat(e.target.value) || 0;
+                                acc.extraSaving = val;
+                                saveStore();
+                                refreshAll();
+                            });
+                        }
+
+                        grid.appendChild(card);
+                    });
+                }
             }
             if (document.getElementById('budgets-view')?.classList.contains('active')) renderBudgets();
             if (document.getElementById('transactions-view')?.classList.contains('active')) renderFullTx();
@@ -251,7 +396,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    document.querySelectorAll('.nav-item, .nav-btn').forEach(btn => btn.onclick = () => swView(btn.dataset.view));
+    document.querySelectorAll('.nav-item, .nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const view = btn.dataset.view;
+            if (view) swView(view);
+        });
+    });
 
     const txModal = document.getElementById('transaction-modal');
     const txForm = document.getElementById('transaction-form');
@@ -261,26 +411,127 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateS = () => { const m = mSelect.value; const subs = categoryHierarchy[m] || ["Otros"]; sSelect.innerHTML = ''; subs.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; sSelect.appendChild(o); }); };
     mSelect?.addEventListener('change', updateS);
 
-    const opModal = () => {
+    const openTxModal = (tx = null, defaultType = 'expense') => {
         if (!mSelect) return;
-        mSelect.innerHTML = '';
-        Object.keys(categoryHierarchy).forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; mSelect.appendChild(o); });
-        updateS();
-        document.getElementById('tx-date').value = new Date().toISOString().split('T')[0]; // Default to today
+        const titleEl = document.getElementById('tx-modal-title');
+
+        const updateMainCats = (type) => {
+            const cats = type === 'income' ? incomeCategories : expenseCategories;
+            mSelect.innerHTML = '';
+            Object.keys(cats).forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; mSelect.appendChild(o); });
+            mSelect.selectedIndex = 0;
+            updateS();
+        };
+
+        if (tx) {
+            const type = tx.amount < 0 ? 'expense' : 'income';
+            titleEl.textContent = type === 'income' ? 'Editar Ingreso' : 'Editar Gasto';
+            updateMainCats(type);
+
+            document.getElementById('tx-id').value = tx.id;
+            document.getElementById('tx-title').value = tx.title;
+            txForm.querySelector('input[name="amount"]').value = Math.abs(tx.amount);
+            document.getElementById('tx-date').value = tx.date.split('T')[0];
+
+            txForm.querySelectorAll('input[name="type"]').forEach(i => {
+                i.checked = i.value === type;
+                i.closest('.toggle-btn').classList.toggle('active', i.value === type);
+            });
+
+            txForm.querySelectorAll('input[name="user"]').forEach(i => {
+                i.checked = i.value === tx.user;
+                i.closest('.toggle-btn').classList.toggle('active', i.value === tx.user);
+            });
+
+            mSelect.value = tx.mainCategory;
+            updateS();
+            sSelect.value = tx.category;
+        } else {
+            titleEl.textContent = defaultType === 'income' ? 'Nuevo Ingreso' : 'Nuevo Gasto';
+            txForm.reset();
+            document.getElementById('tx-id').value = '';
+            document.getElementById('tx-date').value = new Date().toISOString().split('T')[0];
+
+            updateMainCats(defaultType);
+            mSelect.selectedIndex = 0;
+            updateS();
+            txForm.querySelectorAll('input[name="type"]').forEach(i => {
+                const isActive = i.value === defaultType;
+                i.checked = isActive;
+                i.closest('.toggle-btn').classList.toggle('active', isActive);
+            });
+        }
         txModal.classList.add('active');
     };
 
-    document.getElementById('open-modal-btn')?.addEventListener('click', opModal);
+    // Al cambiar el tipo manualmente en el modal, actualizar categorías
+    txForm.querySelectorAll('input[name="type"]').forEach(input => {
+        input.addEventListener('change', (e) => {
+            const type = e.target.value;
+            const cats = type === 'income' ? incomeCategories : expenseCategories;
+            mSelect.innerHTML = '';
+            Object.keys(cats).forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; mSelect.appendChild(o); });
+            updateS();
+            document.getElementById('tx-modal-title').textContent = type === 'income' ? 'Nuevo Ingreso' : 'Nuevo Gasto';
+        });
+    });
+
+    const deleteTx = (id) => {
+        if (!confirm('¿Seguro que quieres borrar este movimiento? El saldo volverá a la cuenta origen.')) return;
+        const tx = store.transactions.find(t => t.id == id);
+        if (tx) {
+            const account = getAccountForTx(tx);
+            if (account) account.balance -= tx.amount;
+            store.transactions = store.transactions.filter(t => t.id != id);
+            saveStore();
+            refreshAll();
+        }
+    };
+
+    document.getElementById('open-modal-btn')?.addEventListener('click', () => openTxModal(null, 'expense'));
+    document.getElementById('open-income-modal-btn')?.addEventListener('click', () => openTxModal(null, 'income'));
     document.getElementById('close-modal-btn')?.addEventListener('click', () => txModal.classList.remove('active'));
 
     txForm?.addEventListener('submit', (e) => {
         e.preventDefault();
         const d = new FormData(txForm);
-        const t = txForm.querySelector('input[name="type"]:checked').value;
+        const txId = d.get('id');
+        const type = txForm.querySelector('input[name="type"]:checked').value;
+        const selectedUser = txForm.querySelector('input[name="user"]:checked').value;
         const amt = parseFloat(d.get('amount'));
-        const newTx = { id: Date.now(), title: d.get('title'), amount: t === 'expense' ? -amt : amt, mainCategory: d.get('mainCategory'), category: d.get('category'), user: txForm.querySelector('input[name="user"]:checked').value, date: d.get('date') || new Date().toISOString() };
-        store.transactions.push(newTx);
-        const ac = store.accounts.find(a => a.id === 'acc1'); if (ac) ac.balance += newTx.amount;
+        const newAmount = type === 'expense' ? -amt : amt;
+
+        if (txId) {
+            const oldTx = store.transactions.find(t => t.id == txId);
+            if (oldTx) {
+                const oldAccount = getAccountForTx(oldTx);
+                if (oldAccount) oldAccount.balance -= oldTx.amount;
+
+                oldTx.title = d.get('title');
+                oldTx.amount = newAmount;
+                oldTx.mainCategory = d.get('mainCategory');
+                oldTx.category = d.get('category');
+                oldTx.user = selectedUser;
+                oldTx.date = d.get('date');
+
+                const newAccount = getAccountForTx(oldTx);
+                if (newAccount) newAccount.balance += newAmount;
+            }
+        } else {
+            const newTx = {
+                id: Date.now(),
+                title: d.get('title'),
+                amount: newAmount,
+                mainCategory: d.get('mainCategory'),
+                category: d.get('category'),
+                user: selectedUser,
+                date: d.get('date') || new Date().toISOString()
+            };
+            store.transactions.push(newTx);
+            const account = getAccountForTx(newTx);
+            if (account) account.balance += newAmount;
+        }
+
         saveStore(); txModal.classList.remove('active'); txForm.reset(); refreshAll();
     });
 
@@ -308,13 +559,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const initFilter = () => {
         if (!filter) return;
         filter.innerHTML = '';
-        const now = new Date();
-        // Incluimos 11 meses atrás y 2 meses adelante
-        for (let i = -11; i <= 2; i++) {
-            const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-            const o = document.createElement('option'); o.value = `${d.getFullYear()}-${d.getMonth()}`; o.textContent = `${monthsNames[d.getMonth()]} ${d.getFullYear()}`;
-            if (d.getFullYear() === selectedYear && d.getMonth() === selectedMonth) o.selected = true;
-            filter.appendChild(o);
+
+        const startYear = 2026;
+        const currentYear = new Date().getFullYear();
+        const endYear = currentYear + 1; // Un año de margen a futuro
+
+        for (let y = startYear; y <= endYear; y++) {
+            for (let m = 0; m < 12; m++) {
+                const o = document.createElement('option');
+                o.value = `${y}-${m}`;
+                o.textContent = `${monthsNames[m]} ${y}`;
+                if (y === selectedYear && (m === selectedMonth || (selectedMonth === null && m === new Date().getMonth()))) o.selected = true;
+                filter.appendChild(o);
+            }
         }
     };
     filter?.addEventListener('change', (e) => { [selectedYear, selectedMonth] = e.target.value.split('-').map(Number); refreshAll(); });

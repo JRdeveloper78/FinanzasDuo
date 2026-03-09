@@ -64,8 +64,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3">
-    <link rel="manifest" href="manifest.json?v=3">
+    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="manifest" href="manifest.json?v=6">
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -107,12 +107,11 @@
                     </li>
                 </ul>
             </nav>
-            <!-- Botón de Rescate Emergencia -->
             <div style="padding: 15px; margin-top: auto;">
                 <button
-                    onclick="if(confirm('¿Reiniciar App? Se borrarán los datos locales.')){localStorage.clear(); location.reload();}"
+                    onclick="if(confirm('¿Borrar toda cache y recargar App? Perderás los últimos cambios no sincronizados con la nube.')){localStorage.clear(); location.reload();}"
                     style="width: 100%; padding: 10px; background: rgba(255, 61, 0, 0.15); border: 1px solid #ff3d00; color: #ff3d00; border-radius: 8px; font-size: 0.75rem; cursor: pointer; transition: 0.3s; font-family: 'Outfit';">
-                    ⚠️ Reiniciar App (Rescate)
+                    ⚠️ Borrar Memoria Local
                 </button>
             </div>
         </aside>
@@ -133,10 +132,16 @@
                     <select id="month-filter" class="glass-select">
                         <!-- Populated by JS -->
                     </select>
-                    <button class="btn-primary" id="open-modal-btn">
-                        <span class="btn-text">Nuevo Gasto</span>
-                        <span class="btn-icon">+</span>
-                    </button>
+                    <div class="header-main-buttons">
+                        <button class="btn-income" id="open-income-modal-btn">
+                            <span class="btn-icon">+</span>
+                            <span class="btn-text">Ingreso</span>
+                        </button>
+                        <button class="btn-expense" id="open-modal-btn">
+                            <span class="btn-icon">+</span>
+                            <span class="btn-text">Gasto</span>
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -152,6 +157,25 @@
                         </div>
                         <div class="chart-container-small">
                             <canvas id="balanceChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Monthly & Debt Summary -->
+                    <div class="card glass status-summary-card">
+                        <h3>Resumen Mensual</h3>
+                        <div class="status-grid">
+                            <div class="status-item">
+                                <p class="label">Gastos Mes</p>
+                                <p class="val expense" id="dashboard-month-expenses">0,00€</p>
+                            </div>
+                            <div class="status-item">
+                                <p class="label">Hipoteca Pendiente</p>
+                                <p class="val" id="dashboard-mortgage-remaining">0,00€</p>
+                            </div>
+                            <div class="status-item">
+                                <p class="label">Préstamo Bankinter</p>
+                                <p class="val" id="dashboard-loan-remaining">0,00€</p>
+                            </div>
                         </div>
                     </div>
 
@@ -256,8 +280,9 @@
     <!-- Transaction Modal -->
     <div id="transaction-modal" class="modal-overlay">
         <div class="modal-content glass">
-            <h3>Nuevo Gasto</h3>
+            <h3 id="tx-modal-title">Nuevo Gasto</h3>
             <form id="transaction-form">
+                <input type="hidden" name="id" id="tx-id">
                 <div class="form-group">
                     <label>¿Quién realiza el movimiento?</label>
                     <div class="toggle-group user-toggle">
@@ -355,7 +380,7 @@
         </div>
     </nav>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=6"></script>
 </body>
 
 </html>
